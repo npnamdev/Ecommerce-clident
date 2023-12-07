@@ -6,8 +6,12 @@ import Home from "./components/Home/index";
 import RegisterPage from "./pages/register";
 import { useEffect } from "react";
 import { callFetchAccount } from "./services/api";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { doGetAccountAction } from "./redux/account/accountSlice";
+import Loading from "./components/Loading";
+import NotFound from "./components/NotFound";
+import AdminPage from "./pages/admin";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const Layout = () => {
   return (
@@ -19,9 +23,25 @@ const Layout = () => {
   );
 };
 
+const LayoutAdmin = () => {
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const user = useSelector(state => state.account.user);
+  const userRole = user.role;
+  return (
+    <div className="layout-app">
+      {isAdminRoute && userRole === 'ADMIN' && <Header />}
+      <Outlet />
+      {isAdminRoute && userRole === 'ADMIN' && <Footer />}
+    </div>
+  );
+};
+
 const App = () => {
   const dispatch = useDispatch();
+  const isAuthenticated = useSelector(state => state.account.isAuthenticated)
+
   const getAccount = async () => {
+    if (window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/') return;
     const res = await callFetchAccount();
     if (res && res.data) {
       dispatch(doGetAccountAction(res.data.user));
@@ -36,7 +56,7 @@ const App = () => {
     {
       path: "/",
       element: <Layout />,
-      errorElement: <div>404 NotFound</div>,
+      errorElement: <NotFound />,
       children: [
         {
           index: true,
@@ -45,6 +65,25 @@ const App = () => {
         {
           path: "contacts",
           element: <div>Contact</div>,
+        },
+        {
+          path: "books",
+          element: <div>book</div>,
+        },
+      ],
+    },
+    {
+      path: "/admin",
+      element: <LayoutAdmin />,
+      errorElement: <NotFound />,
+      children: [
+        {
+          index: true,
+          element: <ProtectedRoute><AdminPage /> </ProtectedRoute>
+        },
+        {
+          path: "user",
+          element: <div>user</div>,
         },
         {
           path: "books",
@@ -63,9 +102,9 @@ const App = () => {
   ]);
 
   return (
-    <>
-      <RouterProvider router={router} />
-    </>
+    <div className="app-page">
+      {isAuthenticated === true || window.location.pathname === '/login' || window.location.pathname === '/register' || window.location.pathname === '/' ? <RouterProvider router={router} /> : <Loading />}
+    </div>
   );
 }
 
