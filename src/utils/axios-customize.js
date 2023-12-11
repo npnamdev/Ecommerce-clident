@@ -7,15 +7,37 @@ const instance = axios.create({
 
 instance.defaults.headers.common = { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` };
 
+const handleRefreshToken = async () => {
+    const res = await instance.get('/api/v1/auth/refresh');
+    if (res && res.data) return res.data.access_token;
+    else null;
+}
+
 instance.interceptors.request.use(function (config) {
     return config;
 }, function (error) {
     return Promise.reject(error);
 });
 
+const NO_RETRY_HEADER = 'x-no-retry';
+
 instance.interceptors.response.use(function (response) {
     return response && response.data ? response.data : response;
-}, function (error) {
+}, async function (error) {
+    if (error.config && error.response && +error.response.status === 401 && !error.config.headers[NO_RETRY_HEADER]) {
+        const access_token = await handleRefreshToken();
+        error.config.headers[NO_RETRY_HEADER] = true;
+        if (access_token) {
+            error.config.headers['Authorization'] = `Bearer ${access_token}`;
+            localStorage.setItem('access_token', access_token);
+            return instance.request(error.config);
+        }
+    }
+
+    if (error.config && error.response && +error.response.status === 400 && error.config.url === '/api/v1/auth/refresh') {
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+    }
     return error?.response?.data ?? Promise.reject(error);
 });
 
