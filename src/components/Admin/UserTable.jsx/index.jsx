@@ -1,9 +1,11 @@
-import { Checkbox, Col, Table, Row } from 'antd';
-
+import { Checkbox, Col, Table, Row, Button } from 'antd';
 import { useEffect, useState } from 'react';
 import { CallFetchListUser } from '../../../services/api';
-import { FiEdit, FiTrash2 } from "react-icons/fi";
+import { FiDownload, FiEdit, FiEye, FiPlus, FiRotateCw, FiTrash2, FiUpload } from "react-icons/fi";
 import SearchInput from '../SearchInput';
+import UserViewDetail from '../UserViewDetail';
+import moment from 'moment';
+import UserModalCreate from '../UserModalCreate';
 
 const UserTable = () => {
     const [listUser, setListUser] = useState([]);
@@ -14,13 +16,9 @@ const UserTable = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [filter, setFilter] = useState(false);
     const [sortQuery, setSortQuery] = useState(false);
-
-    function formatDateTime(inputString) {
-        var inputDateTime = new Date(inputString);
-        var options = { month: 'short', day: 'numeric', year: 'numeric' };
-        var outputDate = inputDateTime.toLocaleDateString('en-US', options);
-        return outputDate;
-    }
+    const [openViewDetail, setOpenViewDetail] = useState(false);
+    const [dataViewDetail, setDataViewDetail] = useState(false);
+    const [openModalCreate, setOpenModalCreate] = useState(false);
 
     useEffect(() => {
         fetchUser();
@@ -85,12 +83,6 @@ const UserTable = () => {
         {
             title: 'ID',
             dataIndex: '_id',
-            render: (text, record, index) => (
-                <a href='#' onClick={() => {
-                    setDataViewDetail(record);
-                    setOpenViewDetail(true);
-                }}>{record._id}</a>
-            ),
         },
         {
             title: 'Tên người dùng',
@@ -116,15 +108,19 @@ const UserTable = () => {
             title: 'Thời gian tạo',
             dataIndex: 'createdAt',
             sorter: true,
-            render: (createdAt) => formatDateTime(createdAt),
+            render: (createdAt) => moment(createdAt).format('lll'),
         },
         {
             title: 'Action',
             render: (text, record, index) => {
                 return (
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <FiEdit style={{ cursor: 'pointer' }} />
-                        <FiTrash2 style={{ cursor: 'pointer' }} />
+                        <FiEdit style={{ cursor: 'pointer', fontSize: '15px' }} />
+                        <FiTrash2 style={{ cursor: 'pointer', fontSize: '15px' }} />
+                        <FiEye style={{ cursor: 'pointer', fontSize: '15px' }} onClick={() => {
+                            setDataViewDetail(record);
+                            setOpenViewDetail(true);
+                        }} />
                     </div>
                 )
             }
@@ -152,6 +148,32 @@ const UserTable = () => {
         setFilter(query);
     }
 
+    const renderHeader = () => {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                Table list user
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <Button style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary' icon={<FiDownload />}>
+                        Import
+                    </Button>
+                    <Button style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary' icon={<FiUpload />}>
+                        Export
+                    </Button>
+                    <Button
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                        type='primary'
+                        icon={<FiPlus />}
+                        onClick={() => { setOpenModalCreate(true) }}>
+                        Add user
+                    </Button>
+                    <Button style={{ display: 'flex', alignItems: 'center' }} onClick={() => handleSearch()}>
+                        <FiRotateCw />
+                    </Button>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <>
             <Row gutter={24} >
@@ -161,6 +183,7 @@ const UserTable = () => {
 
                 <Col span={24}>
                     <Table
+                        title={renderHeader}
                         columns={columns}
                         loading={isLoading}
                         dataSource={listUser}
@@ -170,6 +193,19 @@ const UserTable = () => {
                     />
                 </Col>
             </Row>
+
+            <UserViewDetail
+                openViewDetail={openViewDetail}
+                setOpenViewDetail={setOpenViewDetail}
+                dataViewDetail={dataViewDetail}
+                setDataViewDetail={setDataViewDetail}
+            />
+
+            <UserModalCreate
+                openModalCreate={openModalCreate}
+                setOpenModalCreate={setOpenModalCreate}
+                fetchUser={fetchUser}
+            />
         </>
 
     );

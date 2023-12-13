@@ -33,7 +33,7 @@ const SearchInput = (props) => {
                 onFinish={onFinish}
                 autoComplete="off"
             >
-                <Row gutter={24} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 15px', paddingBottom: '0px' }}>
+                <Row gutter={24} style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 15px', marginBottom: '10px', height: '40px' }}>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <Col span={12} style={{ padding: '0px' }}>
                             <Form.Item name="fullName" >

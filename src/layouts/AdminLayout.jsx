@@ -4,18 +4,16 @@ import {
     MailOutlined,
     MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, UserOutlined, VideoCameraOutlined,
 } from '@ant-design/icons';
-import { Layout, Menu, Button, theme } from 'antd';
+import { Layout, Menu, Button, theme, Avatar, message } from 'antd';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 const { Header, Sider, Content } = Layout;
-import { DownOutlined } from '@ant-design/icons';
 import { Dropdown, Space } from 'antd';
 import { doLogoutAction } from '../redux/account/accountSlice';
 import { callLogout } from '../services/api';
 
 const AdminLayout = () => {
     const [collapsed, setCollapsed] = useState(false);
-    const { token: { colorBgContainer } } = theme.useToken();
     const isAdminRoute = window.location.pathname.startsWith('/admin');
     const user = useSelector(state => state.account.user);
     const userRole = user.role;
@@ -33,6 +31,10 @@ const AdminLayout = () => {
 
     const items = [
         {
+            label: <Link to='/'>Trang chủ</Link>,
+            key: 'home',
+        },
+        {
             label: <label style={{ cursor: 'pointer' }}>
                 Quản lý tài khoản
             </label>,
@@ -45,6 +47,8 @@ const AdminLayout = () => {
             key: 'logout',
         },
     ];
+
+    const urlAvatar = `${import.meta.env.VITE_BACKEND_URL}/images/avatar/${user?.avatar}`;
 
     return (
         <Layout style={{ height: '100vh' }} >
@@ -88,7 +92,7 @@ const AdminLayout = () => {
             }
             <Layout>
                 {isAdminRoute && userRole === 'ADMIN' &&
-                    <Header style={{ padding: 0, background: '#fff', borderBottom: '1px solid #f7f3f3', display: 'flex', justifyContent: 'space-between' }}>
+                    <Header style={{ padding: 0, background: '#fff', borderBottom: '1px solid #f7f3f3', display: 'flex', justifyContent: 'space-between', height: '60px', alignItems: 'center' }}>
                         <Button
                             type="text"
                             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -104,8 +108,8 @@ const AdminLayout = () => {
                         >
                             <a onClick={(e) => e.preventDefault()} style={{ marginRight: '20px', color: 'black' }}>
                                 <Space>
+                                    <Avatar src={urlAvatar} />
                                     {user.fullName}
-                                    <DownOutlined />
                                 </Space>
                             </a>
                         </Dropdown>
