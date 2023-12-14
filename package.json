@@ -25,7 +25,8 @@
     "react-router-dom": "^6.20.1",
     "react-spinners": "0.13.8",
     "redux": "^5.0.0",
-    "sass": "^1.69.5"
+    "sass": "^1.69.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

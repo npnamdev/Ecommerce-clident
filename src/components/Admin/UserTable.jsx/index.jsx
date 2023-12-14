@@ -1,11 +1,14 @@
-import { Checkbox, Col, Table, Row, Button } from 'antd';
+import * as XLSX from 'xlsx';
+import { Col, Table, Row, Button, Popconfirm, message, notification } from 'antd';
 import { useEffect, useState } from 'react';
-import { CallFetchListUser } from '../../../services/api';
+import { CallDeleteUser, CallFetchListUser } from '../../../services/api';
 import { FiDownload, FiEdit, FiEye, FiPlus, FiRotateCw, FiTrash2, FiUpload } from "react-icons/fi";
 import SearchInput from '../SearchInput';
 import UserViewDetail from '../UserViewDetail';
 import moment from 'moment';
 import UserModalCreate from '../UserModalCreate';
+import UserImport from '../UserImport';
+import UserModalUpdate from '../UserModalUpdate';
 
 const UserTable = () => {
     const [listUser, setListUser] = useState([]);
@@ -19,6 +22,9 @@ const UserTable = () => {
     const [openViewDetail, setOpenViewDetail] = useState(false);
     const [dataViewDetail, setDataViewDetail] = useState(false);
     const [openModalCreate, setOpenModalCreate] = useState(false);
+    const [openModalImport, setOpenModalImport] = useState(false);
+    const [openModalUpdate, setOpenModalUpdate] = useState(false);
+    const [dataUpdate, setDataUpdate] = useState(false);
 
     useEffect(() => {
         fetchUser();
@@ -40,11 +46,7 @@ const UserTable = () => {
             const res = await CallFetchListUser(query);
 
             if (res && res.data) {
-                const updatedList = res.data.result.map(user => ({
-                    ...user,
-                    checked: selectAll,
-                }));
-                setListUser(updatedList);
+                setListUser(res.data.result);
                 setTotal(res.data.meta.total);
             }
 
@@ -54,32 +56,7 @@ const UserTable = () => {
         }
     };
 
-    const handleSelectAllChange = (e) => {
-        setSelectAll(e.target.checked);
-    };
-
-    const handleCheckboxChange = (record) => {
-        const updatedList = listUser.map((user) => {
-            if (user._id === record._id) {
-                return {
-                    ...user,
-                    checked: !user.checked,
-                };
-            }
-            return user;
-        });
-
-        setListUser(updatedList);
-        setSelectAll(updatedList.every((user) => user.checked));
-    };
-
     const columns = [
-        {
-            title: <Checkbox checked={selectAll} onChange={handleSelectAllChange} />,
-            render: (text, record, index) => (
-                <Checkbox checked={record.checked} onChange={() => handleCheckboxChange(record)} />
-            ),
-        },
         {
             title: 'ID',
             dataIndex: '_id',
@@ -115,12 +92,27 @@ const UserTable = () => {
             render: (text, record, index) => {
                 return (
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <FiEdit style={{ cursor: 'pointer', fontSize: '15px' }} />
-                        <FiTrash2 style={{ cursor: 'pointer', fontSize: '15px' }} />
-                        <FiEye style={{ cursor: 'pointer', fontSize: '15px' }} onClick={() => {
-                            setDataViewDetail(record);
-                            setOpenViewDetail(true);
-                        }} />
+                        <FiEdit
+                            style={{ cursor: 'pointer', fontSize: '15px' }}
+                            onClick={() => { setOpenModalUpdate(true); setDataUpdate(record) }}
+                        />
+
+                        <Popconfirm
+                            placement='leftTop'
+                            title={"Xác nhận xóa user"}
+                            description={"Bạn có chắc chắn muốn xóa user này?"}
+                            onConfirm={() => { handleDeleteUser(record._id) }}
+                            okText="Xác nhận"
+                            cancelText="Hủy"
+                        >
+                            <FiTrash2 style={{ cursor: 'pointer', fontSize: '15px' }} />
+                        </Popconfirm>
+                        <FiEye
+                            style={{ cursor: 'pointer', fontSize: '15px' }}
+                            onClick={() => {
+                                setDataViewDetail(record);
+                                setOpenViewDetail(true);
+                            }} />
                     </div>
                 )
             }
@@ -148,17 +140,45 @@ const UserTable = () => {
         setFilter(query);
     }
 
+    const handleExportData = () => {
+        if (listUser.length > 0) {
+            const worksheet = XLSX.utils.json_to_sheet(listUser);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+            XLSX.writeFile(workbook, "ExportUser.csv");
+        }
+    }
+
+    const handleDeleteUser = async (userId) => {
+        const res = await CallDeleteUser(userId);
+        if (res && res.data) {
+            message.success('Xóa user thành công');
+            fetchUser();
+        } else {
+            notification.error({
+                message: 'Có lỗi sảy ra!',
+                description: res.message
+            })
+        }
+    }
+
     const renderHeader = () => {
         return (
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 Table list user
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <Button style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary' icon={<FiDownload />}>
+                    <Button style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary' icon={<FiDownload />} onClick={() => setOpenModalImport(true)}>
                         Import
                     </Button>
-                    <Button style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary' icon={<FiUpload />}>
+
+                    <Button
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px' }} type='primary'
+                        icon={<FiUpload />}
+                        onClick={() => handleExportData()}
+                    >
                         Export
                     </Button>
+
                     <Button
                         style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
                         type='primary'
@@ -166,11 +186,12 @@ const UserTable = () => {
                         onClick={() => { setOpenModalCreate(true) }}>
                         Add user
                     </Button>
+
                     <Button style={{ display: 'flex', alignItems: 'center' }} onClick={() => handleSearch()}>
                         <FiRotateCw />
                     </Button>
                 </div>
-            </div>
+            </div >
         )
     }
 
@@ -194,16 +215,30 @@ const UserTable = () => {
                 </Col>
             </Row>
 
+            <UserImport
+                openModalImport={openModalImport}
+                setOpenModalImport={setOpenModalImport}
+                fetchUser={fetchUser}
+            />
+
             <UserViewDetail
                 openViewDetail={openViewDetail}
                 setOpenViewDetail={setOpenViewDetail}
                 dataViewDetail={dataViewDetail}
-                setDataViewDetail={setDataViewDetail}
             />
 
             <UserModalCreate
                 openModalCreate={openModalCreate}
                 setOpenModalCreate={setOpenModalCreate}
+                fetchUser={fetchUser}
+            />
+
+
+            <UserModalUpdate
+                openModalUpdate={openModalUpdate}
+                setOpenModalUpdate={setOpenModalUpdate}
+                dataUpdate={dataUpdate}
+                setDataUpdate={setDataUpdate}
                 fetchUser={fetchUser}
             />
         </>

@@ -2,7 +2,7 @@ import { Drawer, Descriptions } from 'antd';
 import moment from 'moment';
 
 const UserViewDetail = (props) => {
-    const { dataViewDetail, setDataViewDetail, openViewDetail, setOpenViewDetail, } = props;
+    const { dataViewDetail, openViewDetail, setOpenViewDetail, } = props;
     return (
         <Drawer width={"400px"} title="Thông tin chi tiết người dùng" placement="right" onClose={() => setOpenViewDetail(false)} open={openViewDetail}>
             <Descriptions title="" bordered column={1} >
